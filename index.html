@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dienstplan (PDF) → Kalender (ICS)</title>
+<title>Dienstplan-Konverter</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
   :root{
@@ -44,9 +44,8 @@
   .brandmark{
     display:flex; align-items:center; gap:12px;
   }
-  .brandmark .disc{
-    width:38px; height:38px; border-radius:50%;
-    background:var(--zdf-orange);
+  .brandmark .mark{
+    width:38px; height:38px;
     flex-shrink:0;
   }
   .brandmark .word{
@@ -73,16 +72,34 @@
     font-size:clamp(28px,4.4vw,38px);
     line-height:1.08;
     letter-spacing:-0.005em;
-    margin:0 0 12px;
+    margin:0 0 10px;
   }
-  .sub{
+  .tagline{
     color:var(--ink-soft);
-    font-size:15.5px;
-    line-height:1.6;
-    max-width:54ch;
-    margin:0 0 36px;
+    font-size:16px;
+    line-height:1.5;
+    max-width:52ch;
+    margin:0 0 20px;
   }
-  .sub b{color:var(--ink);font-weight:600;}
+
+  .badge-row{
+    display:flex; flex-wrap:wrap; gap:8px;
+    margin:0 0 14px;
+  }
+  .badge{
+    display:inline-flex; align-items:center; gap:6px;
+    font-family:var(--sans); font-weight:600; font-size:12.5px;
+    color:var(--ink-soft); background:var(--paper-tint);
+    border:1px solid var(--line); border-radius:20px;
+    padding:5px 12px 5px 10px;
+  }
+  .badge .ico{ font-size:13px; line-height:1; }
+
+  .header-note{
+    font-size:12.5px; color:var(--ink-soft); line-height:1.6;
+    max-width:60ch; margin:0 0 32px;
+  }
+  .header-note b{ color:var(--ink); font-weight:600; }
 
   /* ---- Signature: orange promo-circle strip that fills as events are found ---- */
   .promo-strip{
@@ -264,6 +281,41 @@
     font-family:var(--mono); font-size:12px; word-break:break-all; flex:1; min-width:180px;
   }
 
+  /* ---- Folder watch ---- */
+  .watch-status-row{
+    display:flex; align-items:center; gap:10px; margin-bottom:14px; flex-wrap:wrap;
+  }
+  .watch-pill{
+    font-family:var(--mono); font-size:11.5px; padding:4px 10px; border-radius:12px;
+    background:var(--paper-tint); border:1px solid var(--line-strong); color:var(--ink-soft);
+    display:inline-flex; align-items:center; gap:6px;
+  }
+  .watch-pill .dot{ width:7px; height:7px; border-radius:50%; background:var(--ink-soft); }
+  .watch-pill.on{ background:#eafaf0; border-color:#bfe8cf; color:var(--green); }
+  .watch-pill.on .dot{ background:var(--green); animation:watchpulse 1.6s ease-in-out infinite; }
+  @keyframes watchpulse{ 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+  .watch-unsupported{
+    font-size:12.5px; line-height:1.6; color:var(--ink-soft);
+    background:#fff; border:1px solid var(--line); border-radius:6px; padding:10px 12px;
+  }
+  .watch-log{
+    margin-top:14px; border:1px solid var(--line); border-radius:6px; background:#fff;
+    max-height:180px; overflow-y:auto;
+  }
+  .watch-log-entry{
+    padding:7px 12px; font-family:var(--mono); font-size:12px; color:var(--ink-soft);
+    border-bottom:1px solid var(--line);
+  }
+  .watch-log-entry:last-child{ border-bottom:none; }
+  .watch-log-entry.err{ color:var(--red); }
+  .watch-log-entry .ts{ color:var(--line-strong); margin-right:8px; }
+  .watch-log-empty{ padding:14px 12px; font-size:12.5px; color:var(--ink-soft); font-style:italic; }
+  .watch-filter-note{ font-size:12px; color:var(--ink-soft); margin:10px 0 0; }
+  .watch-filter-note code{
+    font-family:var(--mono); background:var(--paper-tint); border:1px solid var(--line);
+    padding:1px 5px; border-radius:4px;
+  }
+
   .table-wrap{
     border:1px solid var(--line);
     border-radius:4px;
@@ -306,10 +358,16 @@
 <div class="masthead">
   <div class="masthead-inner">
     <div class="brandmark">
-      <div class="disc" aria-hidden="true"></div>
+      <svg class="mark" viewBox="0 0 40 40" aria-hidden="true">
+        <rect x="1" y="1" width="38" height="38" rx="9" fill="var(--zdf-orange)"/>
+        <rect x="10" y="12" width="20" height="17" rx="2.5" fill="none" stroke="#fff" stroke-width="2"/>
+        <path d="M10 17.5h20" stroke="#fff" stroke-width="2"/>
+        <path d="M14.5 9v6M25.5 9v6" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+        <path d="M13.5 21.5h5M13.5 25h9M21.5 21.5h5" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
       <div class="word">
-        <div class="line1">ZDF Berlin</div>
-        <div class="line2">Ton · Hauptstadtstudio</div>
+        <div class="line1">ZDF</div>
+        <div class="line2">Dienstplan-Konverter</div>
       </div>
     </div>
   </div>
@@ -317,8 +375,20 @@
 
 <div class="wrap">
 
-  <h1>Dienstplan (PDF) → Kalender (ICS)</h1>
-  <p class="sub">PDF reinziehen, <b>.ics</b>-Datei rausziehen. Diese Seite wird online gehostet, deine Dienstplan-Daten verlassen dabei aber nicht deinen Browser — sie werden verarbeitet, nicht hochgeladen. Ausnahme: die optionale „Veröffentlichen"-Funktion weiter unten.</p>
+  <h1>Dienstplan-Konverter</h1>
+  <p class="tagline">Wandelt einen PDF-Dienstplan in eine importierbare Kalenderdatei (.ics) — direkt im Browser.</p>
+
+  <div class="badge-row">
+    <span class="badge"><span class="ico">🔒</span> Daten bleiben lokal</span>
+    <span class="badge"><span class="ico">🌐</span> Kein Login nötig</span>
+    <span class="badge"><span class="ico">⚙️</span> Automatisierung optional</span>
+  </div>
+  <p class="header-note">
+    Diese Seite ist online gehostet, die Verarbeitung selbst läuft aber ausschließlich in deinem
+    Browser — nichts wird hochgeladen. Ausnahme sind die optionalen Zusatzfunktionen
+    <b>„Veröffentlichen"</b> und <b>„Ordner automatisch überwachen"</b> weiter unten, die bewusst
+    aktiviert werden müssen.
+  </p>
 
   <div class="promo-strip">
     <div class="promo-track"><div class="promo-fill" id="promo-fill"></div></div>
@@ -370,8 +440,11 @@
       <div class="publish-inner">
         <p class="publish-warning">
           ⚠️ Anders als der Rest dieses Tools läuft das <b>nicht</b> lokal: die Termine werden dabei
-          an <b>GitHub</b> (als privater „Gist") übertragen, damit deine Kalender-App sie regelmäßig
-          automatisch abrufen kann. Nutze das nur, wenn du damit einverstanden bist.
+          an <b>GitHub</b> (als privater „Gist" unter deinem eigenen, persönlichen Account) übertragen,
+          damit deine Kalender-App sie regelmäßig automatisch abrufen kann. Da Dienstpläne
+          personenbezogene Arbeitszeitdaten sind, ist das eine bewusste Einzelentscheidung —
+          nutze es nur, wenn du damit einverstanden bist, und kläre bei Unsicherheit vorher
+          mit eurem Datenschutz/IT ab, ob das für euren Bereich in Ordnung geht.
         </p>
 
         <div class="publish-step" id="publish-token-step">
@@ -392,6 +465,16 @@
         <button class="btn btn-primary" id="publish-btn">Veröffentlichen</button>
 
         <div class="publish-result" id="publish-result"></div>
+      </div>
+    </details>
+
+    <details class="publish-box" id="watch-box">
+      <summary>
+        <span class="publish-summary-title">Downloads-Ordner automatisch überwachen</span>
+        <span class="publish-summary-sub">Neue Gandalf-Exporte automatisch erkennen und verarbeiten — nur Chrome/Edge</span>
+      </summary>
+      <div class="publish-inner" id="watch-inner">
+        <!-- Inhalt wird abhängig von Browser-Unterstützung per JS gefüllt -->
       </div>
     </details>
 
@@ -780,13 +863,13 @@ async function publishToGist(icsText, token){
   return { rawUrl: stableRawUrl, htmlUrl: data.html_url, isUpdate };
 }
 
-publishBtn.addEventListener('click', async () => {
-  if (!currentIcsText){ return; }
+async function publishNow(){
+  if (!currentIcsText){ return null; }
   const token = tokenInput.value.trim();
   if (!token){
     publishResult.className = 'publish-result err';
     publishResult.textContent = 'Bitte zuerst ein GitHub-Token eintragen.';
-    return;
+    return null;
   }
 
   if (rememberTokenCb.checked){
@@ -820,13 +903,250 @@ publishBtn.addEventListener('click', async () => {
       btn.textContent = 'Kopiert ✓';
       setTimeout(() => { btn.textContent = 'Kopieren'; }, 1800);
     });
+    return { webcalUrl, htmlUrl, isUpdate };
   } catch(err){
     publishResult.className = 'publish-result err';
     publishResult.textContent = 'Fehler: ' + err.message;
+    throw err;
   } finally {
     publishBtn.disabled = false;
   }
-});
+}
+
+publishBtn.addEventListener('click', () => { publishNow().catch(() => {}); });
+
+// ---- Downloads-Ordner automatisch überwachen (nur Chrome/Edge) ----
+// Nutzt die File System Access API: der Browser fragt EINMAL per Dialog um
+// Erlaubnis fuer einen Ordner, danach kann die Seite ihn periodisch selbst
+// abfragen (Polling - es gibt keine "Push"-Benachrichtigung fuer Dateiänderungen
+// in normalen Webseiten). Alles bleibt lokal; nur wenn zusaetzlich
+// "Auto-Veroeffentlichen" aktiviert ist, geht eine erkannte Datei denselben Weg
+// wie ein manueller Klick auf "Veroeffentlichen" (also an GitHub).
+const watchInner = document.getElementById('watch-inner');
+const FS_SUPPORTED = 'showDirectoryPicker' in window;
+const WATCH_POLL_MS = 8000;
+const WATCH_NAME_FILTER = /ausdruck/i; // Gandalf-Namensmuster, wie beim Mac-Setup
+
+let watchDirHandle = null;
+let watchTimerId = null;
+let watchSeen = new Map(); // Dateiname -> zuletzt gesehenes lastModified
+
+function idbOpen(){
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open('dienstplan-tool-db', 1);
+    req.onupgradeneeded = () => req.result.createObjectStore('handles');
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function idbGet(key){
+  const db = await idbOpen();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('handles', 'readonly');
+    const r = tx.objectStore('handles').get(key);
+    r.onsuccess = () => resolve(r.result || null);
+    r.onerror = () => reject(r.error);
+  });
+}
+async function idbSet(key, value){
+  const db = await idbOpen();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('handles', 'readwrite');
+    tx.objectStore('handles').put(value, key);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+function watchLog(message, isErr){
+  const log = document.getElementById('watch-log');
+  if (!log) return;
+  const empty = log.querySelector('.watch-log-empty');
+  if (empty) empty.remove();
+  const entry = document.createElement('div');
+  entry.className = 'watch-log-entry' + (isErr ? ' err' : '');
+  const ts = new Date().toLocaleTimeString('de-DE', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+  entry.innerHTML = `<span class="ts">${ts}</span>${message}`;
+  log.prepend(entry);
+  while (log.children.length > 25) log.removeChild(log.lastChild);
+}
+
+function renderWatchBoxSkeleton(){
+  watchInner.innerHTML = `
+    <div class="watch-status-row">
+      <span class="watch-pill" id="watch-pill">
+        <span class="dot"></span> <span id="watch-pill-text">Nicht aktiv</span>
+      </span>
+      <button class="btn btn-secondary btn-sm" id="watch-choose-btn" type="button">Ordner auswählen</button>
+      <button class="btn btn-secondary btn-sm" id="watch-toggle-btn" type="button" disabled>Überwachung starten</button>
+    </div>
+    <label class="remember-row">
+      <input type="checkbox" id="watch-auto-publish">
+      Erkannte Dateien automatisch veröffentlichen (nutzt das Token von oben)
+    </label>
+    <p class="watch-filter-note">
+      Es werden nur PDFs verarbeitet, deren Dateiname <code>ausdruck</code> enthält
+      (Gandalf-Namensmuster) — verhindert Fehlauslösung durch andere Downloads.
+    </p>
+    <div class="watch-log" id="watch-log">
+      <div class="watch-log-empty">Noch keine Aktivität.</div>
+    </div>
+  `;
+  document.getElementById('watch-choose-btn').addEventListener('click', chooseWatchFolder);
+  document.getElementById('watch-toggle-btn').addEventListener('click', toggleWatching);
+}
+
+function updateWatchControls(){
+  const pill = document.getElementById('watch-pill');
+  if (!pill) return; // Skeleton noch nicht gebaut (z.B. im "unsupported"-Zustand)
+  const isWatching = !!watchTimerId;
+  pill.className = 'watch-pill' + (isWatching ? ' on' : '');
+  document.getElementById('watch-pill-text').textContent = isWatching ? 'Überwachung aktiv' : 'Nicht aktiv';
+  document.getElementById('watch-choose-btn').textContent = watchDirHandle ? 'Anderen Ordner wählen' : 'Ordner auswählen';
+  const toggleBtn = document.getElementById('watch-toggle-btn');
+  toggleBtn.disabled = !watchDirHandle;
+  toggleBtn.textContent = isWatching ? 'Stoppen' : 'Überwachung starten';
+}
+
+function renderWatchUI(state){
+  if (state === 'unsupported'){
+    watchInner.innerHTML = `
+      <p class="watch-unsupported">
+        Dein Browser unterstützt die automatische Ordnerüberwachung nicht — das ist
+        aktuell nur in <b>Chrome</b> und <b>Edge</b> möglich (nicht in Firefox oder Safari).
+        Die manuellen Buttons oben funktionieren weiterhin ganz normal in jedem Browser.
+      </p>`;
+    return;
+  }
+  if (!document.getElementById('watch-pill')){
+    renderWatchBoxSkeleton();
+  }
+  updateWatchControls();
+}
+
+async function chooseWatchFolder(){
+  try{
+    const handle = await window.showDirectoryPicker({ id: 'dienstplan-downloads', mode: 'read', startIn: 'downloads' });
+    watchDirHandle = handle;
+    watchSeen = new Map();
+    await idbSet('downloadsDir', handle);
+    updateWatchControls();
+    watchLog(`Ordner „${handle.name}" ausgewählt.`);
+  } catch(err){
+    if (err.name !== 'AbortError') watchLog('Ordnerauswahl fehlgeschlagen: ' + err.message, true);
+  }
+}
+
+async function toggleWatching(){
+  if (watchTimerId){
+    clearInterval(watchTimerId);
+    watchTimerId = null;
+    watchLog('Überwachung gestoppt.');
+    updateWatchControls();
+    return;
+  }
+
+  if (!watchDirHandle) return;
+  try{
+    let perm = await watchDirHandle.queryPermission({ mode: 'read' });
+    if (perm !== 'granted'){
+      // Muss innerhalb eines direkten Klick-Handlers passieren, sonst verweigert der Browser den Dialog.
+      perm = await watchDirHandle.requestPermission({ mode: 'read' });
+    }
+    if (perm !== 'granted'){
+      watchLog('Zugriff auf den Ordner wurde nicht erteilt.', true);
+      return;
+    }
+  } catch(err){
+    watchLog('Berechtigungsprüfung fehlgeschlagen: ' + err.message, true);
+    return;
+  }
+
+  watchTimerId = setInterval(pollWatchedFolder, WATCH_POLL_MS);
+  watchLog(`Überwachung gestartet (prüft alle ${WATCH_POLL_MS/1000}s).`);
+  pollWatchedFolder();
+  updateWatchControls();
+}
+
+async function pollWatchedFolder(){
+  if (!watchDirHandle) return;
+  try{
+    const perm = await watchDirHandle.queryPermission({ mode: 'read' });
+    if (perm !== 'granted'){
+      watchLog('Zugriff auf den Ordner nicht mehr bestätigt — bitte Ordner erneut auswählen.', true);
+      clearInterval(watchTimerId);
+      watchTimerId = null;
+      updateWatchControls();
+      return;
+    }
+    for await (const [name, handle] of watchDirHandle.entries()){
+      if (handle.kind !== 'file') continue;
+      if (!name.toLowerCase().endsWith('.pdf')) continue;
+      if (!WATCH_NAME_FILTER.test(name)) continue;
+
+      const file = await handle.getFile();
+      const prevModified = watchSeen.get(name);
+      if (prevModified === file.lastModified) continue; // unveraendert, schon verarbeitet
+
+      watchSeen.set(name, file.lastModified);
+      watchLog(`Neue Datei erkannt: ${name}`);
+      await processWatchedFile(file);
+    }
+  } catch(err){
+    watchLog('Fehler beim Prüfen des Ordners: ' + err.message, true);
+  }
+}
+
+async function processWatchedFile(file){
+  try{
+    await handleFile(file); // dieselbe Pipeline wie beim manuellen Drag & Drop
+    watchLog(`Verarbeitet: ${file.name} (${countEl.textContent} Termine)`);
+  } catch(err){
+    watchLog(`Fehler bei ${file.name}: ` + err.message, true);
+    return;
+  }
+
+  const autoPublishCb = document.getElementById('watch-auto-publish');
+  if (autoPublishCb && autoPublishCb.checked){
+    if (!tokenInput.value.trim()){
+      watchLog('Auto-Veröffentlichen übersprungen: kein Token hinterlegt.', true);
+      return;
+    }
+    try{
+      await publishNow();
+      watchLog(`Veröffentlicht: ${file.name}`);
+    } catch(err){
+      watchLog(`Veröffentlichen fehlgeschlagen für ${file.name}: ` + err.message, true);
+    }
+  }
+}
+
+async function initWatchFeature(){
+  if (!FS_SUPPORTED){
+    renderWatchUI('unsupported');
+    return;
+  }
+  renderWatchUI('ready');
+  try{
+    const savedHandle = await idbGet('downloadsDir');
+    if (savedHandle){
+      const perm = await savedHandle.queryPermission({ mode: 'read' });
+      if (perm === 'granted'){
+        watchDirHandle = savedHandle;
+        renderWatchUI('ready');
+        watchLog(`Zuvor gewählter Ordner „${savedHandle.name}" wiedergefunden — Berechtigung noch gültig.`);
+      } else {
+        watchDirHandle = savedHandle; // Handle behalten, aber Neuerteilung noetig -> ueber Klick auf "Ueberwachung starten"
+        renderWatchUI('ready');
+        watchLog(`Ordner „${savedHandle.name}" gespeichert, Zugriff muss aber erneut bestätigt werden (Button "Überwachung starten" klicken).`);
+      }
+    }
+  } catch(err){
+    // IndexedDB evtl. nicht verfuegbar (z.B. privates Fenster) - kein Problem, einfach ohne Persistenz starten
+  }
+}
+
+initWatchFeature();
 </script>
 </body>
 </html>
