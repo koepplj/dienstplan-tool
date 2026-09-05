@@ -171,6 +171,12 @@
   }
   .results-head .count{ color:var(--zdf-orange-dark); font-family:var(--mono); }
 
+  .history-note{
+    font-size:12.5px; color:var(--ink-soft); margin:0 0 14px; line-height:1.6;
+  }
+  .history-note a{ color:var(--zdf-orange-dark); cursor:pointer; text-decoration:none; font-weight:600; }
+  .history-note a:hover{ text-decoration:underline; }
+
   .btn-hint{
     font-size:13px; color:var(--ink-soft); margin:0 0 12px;
   }
@@ -406,10 +412,58 @@
 
   <div class="status" id="status"></div>
 
+  <details class="publish-box" id="watch-box">
+    <summary>
+      <span class="publish-summary-title">Downloads-Ordner automatisch überwachen</span>
+      <span class="publish-summary-sub">Neue Gandalf-Exporte automatisch erkennen und verarbeiten — nur Chrome/Edge</span>
+    </summary>
+    <div class="publish-inner" id="watch-inner">
+      <!-- Inhalt wird abhängig von Browser-Unterstützung per JS gefüllt -->
+    </div>
+  </details>
+
+  <details class="publish-box" id="publish-box">
+    <summary>
+      <span class="publish-summary-title">Als abonnierbaren Web-Kalender veröffentlichen</span>
+      <span class="publish-summary-sub">Einmal einrichten → danach abonniert deine Kalender-App automatisch jede Aktualisierung</span>
+    </summary>
+
+    <div class="publish-inner">
+      <p class="publish-warning">
+        ⚠️ Anders als der Rest dieses Tools läuft das <b>nicht</b> lokal: die Termine werden dabei
+        an <b>GitHub</b> (als privater „Gist" unter deinem eigenen, persönlichen Account) übertragen,
+        damit deine Kalender-App sie regelmäßig automatisch abrufen kann. Da Dienstpläne
+        personenbezogene Arbeitszeitdaten sind, ist das eine bewusste Einzelentscheidung.
+        Nutze es nur, wenn du damit einverstanden bist — im Zweifel vorher kurz mit
+        Datenschutz oder IT abstimmen, ob das für euren Bereich in Ordnung ist.
+      </p>
+
+      <div class="publish-step" id="publish-token-step">
+        <label class="publish-label" for="gh-token">GitHub Personal Access Token (Scope: <code>gist</code>)</label>
+        <div class="token-row">
+          <input type="password" id="gh-token" placeholder="ghp_…" autocomplete="off">
+          <button class="btn btn-secondary btn-sm" id="toggle-token-visibility" type="button" title="Anzeigen/Verbergen">👁</button>
+        </div>
+        <label class="remember-row">
+          <input type="checkbox" id="remember-token" checked>
+          Token in diesem Browser merken (nur lokal gespeichert, nie an uns übertragen)
+        </label>
+        <a href="https://github.com/settings/tokens/new?scopes=gist&description=Dienstplan-Kalender" target="_blank" rel="noopener" class="token-help">
+          Neues Token mit passendem Scope erstellen ↗
+        </a>
+      </div>
+
+      <button class="btn btn-primary" id="publish-btn">Veröffentlichen</button>
+
+      <div class="publish-result" id="publish-result"></div>
+    </div>
+  </details>
+
   <div class="results" id="results">
     <div class="results-head">
-      <h2>Gefundene Termine <span class="count" id="count"></span></h2>
+      <h2>Termine im Kalender <span class="count" id="count"></span></h2>
     </div>
+    <p class="history-note" id="history-note"></p>
     <p class="btn-hint">Datei ist bereit — herunterladen oder direkt in einer Kalender-App öffnen:</p>
 
     <div class="btn-row">
@@ -430,53 +484,6 @@
     </div>
 
     <div class="outlook-note" id="outlook-note"></div>
-
-    <details class="publish-box" id="publish-box">
-      <summary>
-        <span class="publish-summary-title">Als abonnierbaren Web-Kalender veröffentlichen</span>
-        <span class="publish-summary-sub">Einmal einrichten → danach abonniert deine Kalender-App automatisch jede Aktualisierung</span>
-      </summary>
-
-      <div class="publish-inner">
-        <p class="publish-warning">
-          ⚠️ Anders als der Rest dieses Tools läuft das <b>nicht</b> lokal: die Termine werden dabei
-          an <b>GitHub</b> (als privater „Gist" unter deinem eigenen, persönlichen Account) übertragen,
-          damit deine Kalender-App sie regelmäßig automatisch abrufen kann. Da Dienstpläne
-          personenbezogene Arbeitszeitdaten sind, ist das eine bewusste Einzelentscheidung.
-          Nutze es nur, wenn du damit einverstanden bist — im Zweifel vorher kurz mit
-          Datenschutz oder IT abstimmen, ob das für euren Bereich in Ordnung ist.
-        </p>
-
-        <div class="publish-step" id="publish-token-step">
-          <label class="publish-label" for="gh-token">GitHub Personal Access Token (Scope: <code>gist</code>)</label>
-          <div class="token-row">
-            <input type="password" id="gh-token" placeholder="ghp_…" autocomplete="off">
-            <button class="btn btn-secondary btn-sm" id="toggle-token-visibility" type="button" title="Anzeigen/Verbergen">👁</button>
-          </div>
-          <label class="remember-row">
-            <input type="checkbox" id="remember-token" checked>
-            Token in diesem Browser merken (nur lokal gespeichert, nie an uns übertragen)
-          </label>
-          <a href="https://github.com/settings/tokens/new?scopes=gist&description=Dienstplan-Kalender" target="_blank" rel="noopener" class="token-help">
-            Neues Token mit passendem Scope erstellen ↗
-          </a>
-        </div>
-
-        <button class="btn btn-primary" id="publish-btn">Veröffentlichen</button>
-
-        <div class="publish-result" id="publish-result"></div>
-      </div>
-    </details>
-
-    <details class="publish-box" id="watch-box">
-      <summary>
-        <span class="publish-summary-title">Downloads-Ordner automatisch überwachen</span>
-        <span class="publish-summary-sub">Neue Gandalf-Exporte automatisch erkennen und verarbeiten — nur Chrome/Edge</span>
-      </summary>
-      <div class="publish-inner" id="watch-inner">
-        <!-- Inhalt wird abhängig von Browser-Unterstützung per JS gefüllt -->
-      </div>
-    </details>
 
     <div class="table-wrap">
       <div class="table-scroll">
@@ -662,6 +669,77 @@ function buildIcs(events, calendarName){
   return lines.join('\r\n') + '\r\n';
 }
 
+// ---- Fortlaufender Kalender-Verlauf ----
+// Jede PDF von Gandalf deckt nur ~60 Tage ab. Damit der Kalender trotzdem
+// durchgaengig bleibt, wird hier nicht einfach ersetzt, sondern zusammengefuehrt:
+// Der von der NEUEN Datei abgedeckte Tage-Zeitraum wird komplett durch die
+// neuen Daten ersetzt (falls sich dort etwas geaendert hat), alles davor
+// und danach im bisherigen Verlauf bleibt unangetastet erhalten.
+const HISTORY_KEY = 'dienstplan_master_events';
+
+function loadMasterEvents(){
+  try{
+    const raw = localStorage.getItem(HISTORY_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch(e){ return []; }
+}
+
+function saveMasterEvents(events){
+  try{ localStorage.setItem(HISTORY_KEY, JSON.stringify(events)); } catch(e){ /* z.B. voller Speicher - ignorieren */ }
+}
+
+function dateKey(d){
+  return `${d.year}-${pad(d.month)}-${pad(d.day)}`;
+}
+
+function toJsDate(d){
+  return new Date(d.year, d.month - 1, d.day, d.hour, d.minute);
+}
+
+function mergeEvents(existing, incoming){
+  if (incoming.length === 0) return existing;
+  const incomingDays = incoming.map(e => dateKey(e.start));
+  const minDay = incomingDays.reduce((a, b) => (a < b ? a : b));
+  const maxDay = incomingDays.reduce((a, b) => (a > b ? a : b));
+  // Alles behalten, was AUSSERHALB des von der neuen Datei abgedeckten
+  // Tage-Fensters liegt - der Rest wird durch die neuen Daten ersetzt.
+  const kept = existing.filter(e => {
+    const k = dateKey(e.start);
+    return k < minDay || k > maxDay;
+  });
+  const merged = kept.concat(incoming);
+  merged.sort((a, b) => toJsDate(a.start) - toJsDate(b.start));
+  return merged;
+}
+
+function resetHistory(){
+  localStorage.removeItem(HISTORY_KEY);
+  currentIcsText = '';
+  if (currentIcsUrl) URL.revokeObjectURL(currentIcsUrl);
+  currentIcsUrl = null;
+  resultsEl.classList.remove('show');
+  setStatus('Kalender-Verlauf zurückgesetzt.', 'ok');
+}
+
+function formatDayKey(key){
+  const [y, m, d] = key.split('-');
+  return `${d}.${m}.${y}`;
+}
+
+function updateHistoryNote(newCount, totalCount, firstDay, lastDay){
+  const note = document.getElementById('history-note');
+  if (!note) return;
+  note.innerHTML =
+    `Zeitraum insgesamt: ${formatDayKey(firstDay)} – ${formatDayKey(lastDay)} ` +
+    `(${newCount} aus dieser Datei neu/aktualisiert). ` +
+    `<a id="reset-history-link">Verlauf zurücksetzen</a>`;
+  document.getElementById('reset-history-link').addEventListener('click', () => {
+    if (confirm('Gesamten gespeicherten Kalender-Verlauf in diesem Browser löschen?')){
+      resetHistory();
+    }
+  });
+}
+
 function renderTable(events){
   tbody.innerHTML = '';
   for (const ev of events){
@@ -703,7 +781,10 @@ async function handleFile(file){
       return;
     }
 
-    const icsContent = buildIcs(events, 'ZDF Dienstplan');
+    const masterEvents = mergeEvents(loadMasterEvents(), events);
+    saveMasterEvents(masterEvents);
+
+    const icsContent = buildIcs(masterEvents, 'ZDF Dienstplan');
     currentIcsText = icsContent;
     if (currentIcsUrl) URL.revokeObjectURL(currentIcsUrl);
     currentIcsBlob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
@@ -711,11 +792,16 @@ async function handleFile(file){
     publishResult.innerHTML = '';
     publishResult.className = 'publish-result';
 
-    countEl.textContent = events.length;
-    renderTable(events);
+    countEl.textContent = masterEvents.length;
+    renderTable(masterEvents);
     resultsEl.classList.add('show');
-    setPromo(100, `${events.length} termine`);
-    setStatus(`${events.length} Termine gefunden.`, 'ok');
+
+    const firstDay = dateKey(masterEvents[0].start);
+    const lastDay = dateKey(masterEvents[masterEvents.length - 1].start);
+    updateHistoryNote(events.length, masterEvents.length, firstDay, lastDay);
+
+    setPromo(100, `${masterEvents.length} termine`);
+    setStatus(`${events.length} Termine aus dieser Datei — ${masterEvents.length} insgesamt im Kalender.`, 'ok');
   } catch(err){
     setPromo(0, 'fehler');
     setStatus('Fehler beim Verarbeiten: ' + err.message, 'err');
@@ -819,16 +905,39 @@ toggleTokenBtn.addEventListener('click', () => {
   tokenInput.type = tokenInput.type === 'password' ? 'text' : 'password';
 });
 
-function gistFilename(){
-  return (currentFileBase || 'dienstplan').replace(/[^a-zA-Z0-9_\-]/g, '_') + '.ics';
-}
+// Fester Dateiname im Gist - UNABHAENGIG vom Namen der importierten PDF.
+// Wichtig: Gandalf-Exporte haben datumsabhaengige Dateinamen (z.B.
+// "260726_Ausdruck_202008.pdf" vs. "270826_Ausdruck_..."). Wuerde der
+// Gist-Dateiname vom PDF-Namen abgeleitet, bekaeme jeder neue Import eine
+// ANDERE Datei im selben Gist und damit eine neue Abo-URL - ein bestehendes
+// Kalender-Abo wuerde dann nie wieder aktualisiert. Deshalb immer derselbe Name.
+const GIST_FILENAME = 'zdf-dienstplan.ics';
 
 async function publishToGist(icsText, token){
-  const filename = gistFilename();
+  const filename = GIST_FILENAME;
   const existingId = localStorage.getItem(GIST_ID_KEY);
   const isUpdate = !!existingId;
   const url = isUpdate ? `https://api.github.com/gists/${existingId}` : 'https://api.github.com/gists';
   const method = isUpdate ? 'PATCH' : 'POST';
+
+  const files = { [filename]: { content: icsText } };
+
+  // Aufraeumen: falls durch den frueheren Bug bereits andere Dateien mit
+  // PDF-abhaengigem Namen im selben Gist gelandet sind, hier entfernen -
+  // sonst haeuft sich das mit jedem Import weiter an.
+  if (isUpdate){
+    try{
+      const getRes = await fetch(`https://api.github.com/gists/${existingId}`, {
+        headers: { 'Authorization': 'token ' + token, 'Accept': 'application/vnd.github+json' },
+      });
+      if (getRes.ok){
+        const existing = await getRes.json();
+        for (const name of Object.keys(existing.files || {})){
+          if (name !== filename) files[name] = null; // null = Datei im Gist loeschen
+        }
+      }
+    } catch(e){ /* Aufraeumen ist best-effort, kein harter Fehler falls das fehlschlaegt */ }
+  }
 
   const res = await fetch(url, {
     method,
@@ -840,7 +949,7 @@ async function publishToGist(icsText, token){
     body: JSON.stringify({
       description: 'ZDF Dienstplan (automatisch veröffentlicht - nicht öffentlich gelistet)',
       public: false,
-      files: { [filename]: { content: icsText } },
+      files,
     }),
   });
 
@@ -864,7 +973,11 @@ async function publishToGist(icsText, token){
 }
 
 async function publishNow(){
-  if (!currentIcsText){ return null; }
+  if (!currentIcsText){
+    publishResult.className = 'publish-result err';
+    publishResult.textContent = 'Noch keine Termine vorhanden — importiere zuerst eine PDF oder aktiviere die Ordnerüberwachung.';
+    return null;
+  }
   const token = tokenInput.value.trim();
   if (!token){
     publishResult.className = 'publish-result err';
@@ -1147,6 +1260,24 @@ async function initWatchFeature(){
 }
 
 initWatchFeature();
+
+function loadExistingHistoryOnStart(){
+  const masterEvents = loadMasterEvents();
+  if (masterEvents.length === 0) return;
+  const icsContent = buildIcs(masterEvents, 'ZDF Dienstplan');
+  currentIcsText = icsContent;
+  if (currentIcsUrl) URL.revokeObjectURL(currentIcsUrl);
+  currentIcsBlob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+  currentIcsUrl = URL.createObjectURL(currentIcsBlob);
+  countEl.textContent = masterEvents.length;
+  renderTable(masterEvents);
+  resultsEl.classList.add('show');
+  const firstDay = dateKey(masterEvents[0].start);
+  const lastDay = dateKey(masterEvents[masterEvents.length - 1].start);
+  updateHistoryNote(0, masterEvents.length, firstDay, lastDay);
+  setStatus(`${masterEvents.length} Termine aus gespeichertem Verlauf geladen.`, 'ok');
+}
+loadExistingHistoryOnStart();
 </script>
 </body>
 </html>
