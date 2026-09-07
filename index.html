@@ -608,6 +608,25 @@ function extractEvents(lines){
   return events;
 }
 
+// Jede Gandalf-PDF traegt oben ein Erstellungsdatum (z.B. "26.07.2026" -
+// eigene Zeile, 4-stelliges Jahr, anders als das 2-stellige Jahr in den
+// Termin-Zeilen). Das dient als Versionsstempel: ein Import darf einen Tag
+// nur ueberschreiben, wenn seine PDF genauso neu oder neuer ist als die
+// zuletzt fuer diesen Tag gespeicherten Daten - schuetzt davor, dass eine
+// versehentlich re-importierte alte Export-Datei neuere Aenderungen zuruecksetzt.
+const GEN_DATE_RE = /^(\d{2})\.(\d{2})\.(\d{4})$/;
+
+function extractGenerationDate(lines){
+  for (const line of lines){
+    const m = line.trim().match(GEN_DATE_RE);
+    if (m){
+      const [, dd, mm, yyyy] = m;
+      return `${yyyy}-${mm}-${dd}`; // String-sortierbares Format
+    }
+  }
+  return null; // kein Datum gefunden - Reihenfolge kann dann nicht geprueft werden
+}
+
 function escapeIcsText(text){
   return text.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n');
 }
@@ -696,20 +715,37 @@ function toJsDate(d){
   return new Date(d.year, d.month - 1, d.day, d.hour, d.minute);
 }
 
-function mergeEvents(existing, incoming){
-  if (incoming.length === 0) return existing;
+function mergeEvents(existing, incoming, genDate){
+  if (incoming.length === 0) return { merged: existing, protectedDays: [] };
   const incomingDays = incoming.map(e => dateKey(e.start));
   const minDay = incomingDays.reduce((a, b) => (a < b ? a : b));
   const maxDay = incomingDays.reduce((a, b) => (a > b ? a : b));
-  // Alles behalten, was AUSSERHALB des von der neuen Datei abgedeckten
-  // Tage-Fensters liegt - der Rest wird durch die neuen Daten ersetzt.
+
+  // Tage, an denen bereits Daten aus einer NEUEREN PDF liegen, als die
+  // gerade importierte - diese Tage bleiben unangetastet (Schutz vor
+  // versehentlichem Zuruecksetzen durch eine aeltere Datei).
+  const protectedDays = new Set();
+  if (genDate){
+    for (const e of existing){
+      const k = dateKey(e.start);
+      if (k >= minDay && k <= maxDay && e.sourceDate && e.sourceDate > genDate){
+        protectedDays.add(k);
+      }
+    }
+  }
+
   const kept = existing.filter(e => {
     const k = dateKey(e.start);
-    return k < minDay || k > maxDay;
+    return k < minDay || k > maxDay || protectedDays.has(k);
   });
-  const merged = kept.concat(incoming);
+
+  const incomingTagged = incoming
+    .filter(e => !protectedDays.has(dateKey(e.start)))
+    .map(e => ({ ...e, sourceDate: genDate || null }));
+
+  const merged = kept.concat(incomingTagged);
   merged.sort((a, b) => toJsDate(a.start) - toJsDate(b.start));
-  return merged;
+  return { merged, protectedDays: Array.from(protectedDays) };
 }
 
 function resetHistory(){
@@ -726,12 +762,15 @@ function formatDayKey(key){
   return `${d}.${m}.${y}`;
 }
 
-function updateHistoryNote(newCount, totalCount, firstDay, lastDay){
+function updateHistoryNote(newCount, totalCount, firstDay, lastDay, genDate){
   const note = document.getElementById('history-note');
   if (!note) return;
+  const standInfo = genDate
+    ? ` · Stand dieser Datei: ${formatDayKey(genDate)}`
+    : ' · Erstellungsdatum dieser Datei nicht erkannt';
   note.innerHTML =
     `Zeitraum insgesamt: ${formatDayKey(firstDay)} – ${formatDayKey(lastDay)} ` +
-    `(${newCount} aus dieser Datei neu/aktualisiert). ` +
+    `(${newCount} aus dieser Datei neu/aktualisiert${standInfo}). ` +
     `<a id="reset-history-link">Verlauf zurücksetzen</a>`;
   document.getElementById('reset-history-link').addEventListener('click', () => {
     if (confirm('Gesamten gespeicherten Kalender-Verlauf in diesem Browser löschen?')){
@@ -781,7 +820,8 @@ async function handleFile(file){
       return;
     }
 
-    const masterEvents = mergeEvents(loadMasterEvents(), events);
+    const genDate = extractGenerationDate(lines);
+    const { merged: masterEvents, protectedDays } = mergeEvents(loadMasterEvents(), events, genDate);
     saveMasterEvents(masterEvents);
 
     const icsContent = buildIcs(masterEvents, 'ZDF Dienstplan');
@@ -798,10 +838,17 @@ async function handleFile(file){
 
     const firstDay = dateKey(masterEvents[0].start);
     const lastDay = dateKey(masterEvents[masterEvents.length - 1].start);
-    updateHistoryNote(events.length, masterEvents.length, firstDay, lastDay);
+    updateHistoryNote(events.length, masterEvents.length, firstDay, lastDay, genDate);
 
     setPromo(100, `${masterEvents.length} termine`);
-    setStatus(`${events.length} Termine aus dieser Datei — ${masterEvents.length} insgesamt im Kalender.`, 'ok');
+    if (protectedDays.length > 0){
+      setStatus(
+        `${events.length} Termine aus dieser Datei — ${protectedDays.length} Tag(e) übersprungen, ` +
+        `da dafür bereits aktuellere Daten vorliegen.`, 'ok'
+      );
+    } else {
+      setStatus(`${events.length} Termine aus dieser Datei — ${masterEvents.length} insgesamt im Kalender.`, 'ok');
+    }
   } catch(err){
     setPromo(0, 'fehler');
     setStatus('Fehler beim Verarbeiten: ' + err.message, 'err');
@@ -1274,7 +1321,9 @@ function loadExistingHistoryOnStart(){
   resultsEl.classList.add('show');
   const firstDay = dateKey(masterEvents[0].start);
   const lastDay = dateKey(masterEvents[masterEvents.length - 1].start);
-  updateHistoryNote(0, masterEvents.length, firstDay, lastDay);
+  const knownDates = masterEvents.map(e => e.sourceDate).filter(Boolean);
+  const latestGenDate = knownDates.length ? knownDates.reduce((a, b) => (a > b ? a : b)) : null;
+  updateHistoryNote(0, masterEvents.length, firstDay, lastDay, latestGenDate);
   setStatus(`${masterEvents.length} Termine aus gespeichertem Verlauf geladen.`, 'ok');
 }
 loadExistingHistoryOnStart();
